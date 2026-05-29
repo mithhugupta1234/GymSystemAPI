@@ -15,4 +15,5 @@ public class GymDbContext : DbContext
     public DbSet<Attendance> Attendances { get; set; } = null!;
     public DbSet<Staff> Staffs { get; set; } = null!;
     public DbSet<MembershipPlan> MembershipPlans { get; set; } = null!;
+    public DbSet<User> Users { get; set; } = null!;
 }
