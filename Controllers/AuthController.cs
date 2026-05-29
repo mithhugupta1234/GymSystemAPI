@@ -1,50 +1,52 @@
-﻿using GymSystemAPI.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+﻿using Microsoft.AspNetCore.Mvc;
+using GymSystemAPI.Data;
+using GymSystemAPI.Models;
 
-[HttpPost("login")]
-public IActionResult Login(User loginUser)
+namespace GymSystemAPI.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    var user = _context.Users.FirstOrDefault(x =>
-        x.Email == loginUser.Email &&
-        x.Password == loginUser.Password);
+    private readonly GymDbContext _context;
 
-    if (user == null)
+    public AuthController(GymDbContext context)
     {
-        return Unauthorized("Invalid Email or Password");
+        _context = context;
     }
 
-    var claims = new[]
+    // REGISTER API
+    [HttpPost("register")]
+    public IActionResult Register(User user)
     {
-        new Claim(ClaimTypes.Name, user.Email)
-    };
+        var existingUser = _context.Users
+            .FirstOrDefault(x => x.Email == user.Email);
 
-    var key = new SymmetricSecurityKey(
-        Encoding.UTF8.GetBytes(
-            _configuration["Jwt:Key"]!
-        )
-    );
+        if (existingUser != null)
+        {
+            return BadRequest("Email already exists");
+        }
 
-    var creds = new SigningCredentials(
-        key,
-        SecurityAlgorithms.HmacSha256
-    );
+        _context.Users.Add(user);
 
-    var token = new JwtSecurityToken(
-        issuer: _configuration["Jwt:Issuer"],
-        audience: _configuration["Jwt:Audience"],
-        claims: claims,
-        expires: DateTime.Now.AddHours(1),
-        signingCredentials: creds
-    );
+        _context.SaveChanges();
 
-    return Ok(new
+        return Ok("User Registered Successfully");
+    }
+
+    // LOGIN API
+    [HttpPost("login")]
+    public IActionResult Login(User loginUser)
     {
-        token = new JwtSecurityTokenHandler()
-            .WriteToken(token)
-    });
+        var user = _context.Users.FirstOrDefault(x =>
+            x.Email == loginUser.Email &&
+            x.Password == loginUser.Password);
+
+        if (user == null)
+        {
+            return Unauthorized("Invalid Email or Password");
+        }
+
+        return Ok("Login Successful");
+    }
 }
